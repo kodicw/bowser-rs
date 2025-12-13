@@ -1,0 +1,16 @@
+[
+  {
+    "by": "ID",
+    "id": "firstName",
+    "value": "Bob",
+    "action": "SendKeys",
+    "path": "/automation-practice-form"
+  },
+  {
+    "by": "ID",
+    "id": "lastName",
+    "value": "Lan",
+    "action": "SendKeys",
+    "path": "/automation-practice-form"
+  }
+]
