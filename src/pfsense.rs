@@ -124,7 +124,7 @@ pub async fn add_dns_forwarder(web: &WebPage, forwarder: &DNSForwarder) {
 
 pub async fn add_host_aliases(web: &WebPage, alias: Alias) {
     web.driver
-        .get(format!("{}//firewall_aliases.php?tab=ip", web.url))
+        .get(format!("{}/firewall_aliases.php?tab=ip", web.url))
         .await
         .unwrap();
 
@@ -134,13 +134,15 @@ pub async fn add_host_aliases(web: &WebPage, alias: Alias) {
         .await
         .expect("Unable to extract html from IP alias page");
 
-    let mut url = format!("{}/{}", web.url, "/firewall_aliases_edit.php");
+    let mut url = format!("{}{}", web.url, "/firewall_aliases_edit.php?tab=ip");
+    let mut new_entry = true;
 
     if let Some(table) = table_extract::Table::find_first(&html_raw) {
         for row in &table {
             if let Some(name) = row.get("Name") {
                 if let Some(t) = row.get("Actions") {
                     if alias.name == name {
+                        new_entry = false;
                         println!("{:?}", name);
                         let fragment = Html::parse_fragment(&t);
 
@@ -161,27 +163,7 @@ pub async fn add_host_aliases(web: &WebPage, alias: Alias) {
         }
     };
 
-    let name_field = Task::new(
-        ByOptions::ID,
-        "name".to_string(),
-        alias.name.clone(),
-        ActionOptions::SendKeys,
-        "".to_string(),
-    );
-
-    let description_field = Task::new(
-        ByOptions::ID,
-        "descr".to_string(),
-        alias.description.clone(),
-        ActionOptions::SendKeys,
-        "".to_string(),
-    );
-
-    let tasks: Vec<Task> = vec![name_field];
-    let job: Job = Job { tasks: tasks };
-
     web.driver.get(url).await.unwrap();
-
     let current_ips_fdqn = match web
         .driver
         .find_all(By::XPath("//*[starts-with(@id, 'address') and not(contains(@id, '_')) and translate(substring(@id, string-length('address') + 1), '0123456789', '') = '']"))
@@ -191,6 +173,24 @@ pub async fn add_host_aliases(web: &WebPage, alias: Alias) {
         _ => panic!("Unable to find aliases"),
     };
     let mut c_ip_fdqn: Vec<String> = vec![];
+    if new_entry {
+        let name_field = web
+            .driver
+            .find(By::Id("name"))
+            .await
+            .expect("Unable to find name field");
+
+        let description_field = web
+            .driver
+            .find(By::Id("descr"))
+            .await
+            .expect("Unable to find name field");
+        name_field.send_keys(&alias.name).await.unwrap();
+        description_field
+            .send_keys(&alias.description)
+            .await
+            .unwrap();
+    };
 
     for ip_fdqn in current_ips_fdqn {
         let v = match ip_fdqn.get_property("value").await {
@@ -213,8 +213,12 @@ pub async fn add_host_aliases(web: &WebPage, alias: Alias) {
                 .find(By::Id("addrow"))
                 .await
                 .expect("Failed to find addrow button");
-            let current_row_id = format!("address{}", current_entry);
-            add_row_button.click().await.expect("");
+            let mut current_row_id = format!("address{}", current_entry);
+            if new_entry {
+                current_row_id = "address0".to_string();
+            } else {
+                add_row_button.click().await.expect("");
+            }
             let current_row = web
                 .driver
                 .find(By::Id(current_row_id))
@@ -231,16 +235,23 @@ pub async fn add_host_aliases(web: &WebPage, alias: Alias) {
     if need_to_save {
         if let Ok(save_button) = web.driver.find(By::Id("save")).await {
             save_button.click().await.expect("Failed to save changes");
+            println!("Saving changes");
+            let apply_button = web
+                .driver
+                .find(By::XPath("//*[@id='2']/div/div[1]/form/button"))
+                .await
+                .expect("Could not find apply button");
+            apply_button.click().await.unwrap()
         };
     }
 }
 
-pub fn load_alias_file(file: String) -> Alias {
+pub fn load_alias_file(file: String) -> Vec<Alias> {
     let contents = match fs::read_to_string(file) {
         Ok(content) => content,
         _ => panic!("Failed to read alias file"),
     };
-    let result: Alias = serde_json::from_str(&contents).expect("Could not parse alias file");
+    let result: Vec<Alias> = serde_json::from_str(&contents).expect("Could not parse alias file");
     println!("{:?}", result);
     result
 }
@@ -254,4 +265,4 @@ pub fn load_dns_forwarder_file(file: String) -> Vec<DNSForwarder> {
         serde_json::from_str(&contents).expect("Could not parse dns file");
     println!("{:?}", result);
     result
-}
+} //*[@id="2"]/div/nav/a[1]//*[@id="2"]/div/n//*[@id="2"]/div/nav/a[1]av/a[1]

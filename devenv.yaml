@@ -1,4 +1,7 @@
 inputs:
+  polarbear:
+    url:
+      github:kodicw/polarbear
   mk-shell-bin:
     url: github:rrbutani/nix-mk-shell-bin
   nix2container:

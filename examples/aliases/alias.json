@@ -1,8 +1,10 @@
-{
-  "name": "Name",
-  "description": "test",
-  "type_": "host",
-  "entrys": [
-    "test.test.test"
-  ]
-}
+[
+  {
+    "name": "Google",
+    "description": "test",
+    "type_": "host",
+    "entrys": [
+      "google.com"
+    ]
+  }
+]

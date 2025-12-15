@@ -1,35 +1,31 @@
-use std::{fs::File, io::BufReader, ptr::null, time::Duration};
+use std::time::Duration;
 
-use bowser::{Args, Job, Task, WebPage, contruct_proxy, pfsense, read_job_file};
+use bowser::{Args, Job, WebPage, contruct_proxy, pfsense, read_job_file};
 use clap::Parser;
-use serde::{Deserialize, Serialize};
-use thirtyfour::{ChromeCapabilities, Proxy, prelude::*};
-use tokio::time::sleep;
+use thirtyfour::prelude::*;
 
 const PFSENSE_MODULE: &'static str = "pfsense";
 
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
     let mut caps = DesiredCapabilities::chrome();
-    let mut opts: Vec<String> = Vec::new();
-    caps.add_arg("--disable-blink-features=AutomationControlled");
-    caps.add_arg("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
+    let _ = caps.add_arg("--disable-blink-features=AutomationControlled");
+    let _ = caps.add_arg("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
 
     let args = Args::parse();
-    let proxy = args.proxy.unwrap_or(String::from(""));
 
-    if !proxy.is_empty() {
-        println!("Using proxy-server {}", proxy);
-        // let proxy_server = Proxy::AutoConfig { url: proxy };
-        let proxy_config = contruct_proxy(proxy);
+    match args.proxy {
+        Some(proxy) => {
+            println!("Using proxy-server {}", proxy);
+            let proxy_config = contruct_proxy(proxy);
 
-        caps.set_proxy(proxy_config.clone())
-            .expect("Unable to set proxy-server")
+            caps.set_proxy(proxy_config.clone())
+                .expect("Unable to set proxy-server")
+        }
+        _ => println!("No proxy passed"),
     }
 
     if args.insecure {
-        // This is the old style
-        // opts.append("--ignore-certificate-errors");
         caps.accept_insecure_certs(true)
             .expect("Browser cannot be set to insecure mode")
     }
@@ -42,7 +38,7 @@ async fn main() -> WebDriverResult<()> {
         _ => "".to_string(),
     };
     if module == PFSENSE_MODULE {
-        let login = {
+        {
             pfsense::login(
                 args.username.unwrap_or("no".to_string()),
                 args.password.unwrap_or("no".to_string()),
@@ -54,8 +50,10 @@ async fn main() -> WebDriverResult<()> {
 
             match args.alias_file {
                 Some(file) => {
-                    let alias = pfsense::load_alias_file(file);
-                    pfsense::add_host_aliases(&webpage, alias).await;
+                    let aliases = pfsense::load_alias_file(file);
+                    for alias in aliases {
+                        pfsense::add_host_aliases(&webpage, alias).await;
+                    }
                 }
                 _ => println!("No alias file"),
             };

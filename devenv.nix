@@ -12,13 +12,17 @@
     mitmproxy
     chromium
     google-chrome
+    zellij
+    nushell
+    inputs.polarbear.packages."x86_64-linux".nixvim
   ];
+    git-hooks.hooks = {
+      rustfmt.enable = true;
+      clippy.enable = true;
+    };
 
   cachix.enable = false;
-  languages.rust.enable = true;
-
-  languages.python = {
-    uv.enable = true;
+  languages.rust = {
     enable = true;
   };
 
@@ -31,4 +35,5 @@
     name = "webdriver";
     startupCommand = config.processes.driver.exec;
   };
+  enterShell = '''';
 }

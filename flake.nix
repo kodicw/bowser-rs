@@ -25,14 +25,10 @@
     {
       packages = eachSystem (system: {
         default = pkgs.${system}.rustPlatform.buildRustPackage rec {
-          pname = "bowser-rs"; # Replace with your app name
+          pname = "bowser"; # Replace with your app name
           version = "0.1.0";
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
-          installPhase = ''
-            mkdir -p $out/bin
-            cp target/release/${pname} $out/bin/
-          '';
         };
       });
     };
