@@ -24,7 +24,8 @@
     in
     {
       packages = eachSystem (system: {
-        default = pkgs.${system}.rustPlatform.buildRustPackage rec {
+        default = self.packages.${system}.bowser;
+        bowser = pkgs.${system}.rustPlatform.buildRustPackage rec {
           pname = "bowser"; # Replace with your app name
           version = "0.1.0";
           src = ./.;
